@@ -1,6 +1,9 @@
 "use client"
 
 import Link from "next/link"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { supabase } from "@/lib/supabaseClient"
 import { User, LogOut, Settings, FileText, Heart, PlusCircle } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -13,15 +16,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useRouter } from "next/navigation"
 
 export function UserNav() {
-  const router = useRouter()
-  // For demonstration, we'll assume the user is not logged in
-  const isLoggedIn = false
+  console.log("UserNav component mounted")
 
-  // If user is not logged in, show login button
-  if (!isLoggedIn) {
+  const router = useRouter()
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user)
+      console.log("Supabase user:", data.user)
+    })
+  }, [])
+
+  if (!user) {
     return (
       <Button variant="outline" size="sm" onClick={() => router.push("/login")}>
         Login
@@ -29,8 +38,7 @@ export function UserNav() {
     )
   }
 
-  // Current user's username - in a real app, this would come from auth
-  const username = "DungeonMaster42"
+  const username = user.user_metadata?.username || user.email?.split("@")[0] || "User"
 
   return (
     <DropdownMenu>
@@ -38,7 +46,7 @@ export function UserNav() {
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
             <AvatarImage src="/placeholders/avatar-wizard.png" alt="@user" />
-            <AvatarFallback>DM</AvatarFallback>
+            <AvatarFallback>{username.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
@@ -46,7 +54,7 @@ export function UserNav() {
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">{username}</p>
-            <p className="text-xs leading-none text-muted-foreground">dm42@example.com</p>
+            <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
