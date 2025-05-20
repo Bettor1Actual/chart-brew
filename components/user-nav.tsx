@@ -38,8 +38,15 @@ export function UserNav() {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("🔄 Auth state changed:", event, session)
       if (event === "SIGNED_IN") {
+        console.log("Setting user to:", session?.user)
         setUser(session?.user || null)
+        // Force a page reload to ensure UI updates with the logged-in state
+        if (session?.user && !user) {
+          console.log("Forcing page reload after SIGNED_IN event")
+          window.location.reload()
+        }
       } else if (event === "SIGNED_OUT") {
+        console.log("Setting user to null after SIGNED_OUT")
         setUser(null)
       }
     })
@@ -48,7 +55,7 @@ export function UserNav() {
     return () => {
       authListener.subscription.unsubscribe()
     }
-  }, [])
+  }, [user]) // Add user to dependencies to re-run effect if user changes
 
   const handleLogout = async () => {
     console.log("Attempting to log out...")
@@ -64,6 +71,8 @@ export function UserNav() {
       console.error("❌ Unexpected error during logout:", err)
     }
   }
+
+  console.log("Rendering UserNav with user:", user)
 
   if (!user) {
     return (
