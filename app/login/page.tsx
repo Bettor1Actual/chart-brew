@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/router"
 import { ArrowLeft } from "lucide-react"
 import { useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
@@ -27,6 +28,7 @@ export default function LoginPage() {
   const [loginEmail, setLoginEmail] = useState("")
   const [loginPassword, setLoginPassword] = useState("")
   const [loginError, setLoginError] = useState("")
+  const router = useRouter()
 
   const handleLogin = async () => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -35,18 +37,18 @@ export default function LoginPage() {
     })
 
     if (error) {
+      console.log("Login error:", error.message)
       setLoginError(error.message)
     } else {
       setLoginError("")
-      window.location.href = "/"
+      router.push("/")
     }
   }
 
   return (
     <div className="container py-8 flex flex-col items-center justify-center min-h-[calc(100vh-14rem)] relative">
-      <div className="absolute right-4 top-4 bg-white text-black p-2 rounded">
+      <div className="absolute right-4 top-4">
         <UserNav />
-        <p>HELLO from UserNav wrapper</p>
       </div>
 
       <div className="w-full max-w-md">
@@ -87,12 +89,12 @@ export default function LoginPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password">Password</Label>
-                    <Link
+                    {/* <Link
                       href="/forgot-password"
                       className="text-xs text-primary hover:underline"
                     >
                       Forgot password?
-                    </Link>
+                    </Link> */}
                   </div>
                   <Input
                     id="password"
