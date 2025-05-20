@@ -1,8 +1,8 @@
 "use client"
 
-import Link from "next/link"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { supabase } from "@/lib/supabaseClient"
 import { User, LogOut, Settings, FileText, Heart, PlusCircle } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -18,16 +18,38 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 export function UserNav() {
-  console.log("UserNav component mounted")
-
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user)
-      console.log("Supabase user:", data.user)
+    // Initial check for user session
+    const getUser = async () => {
+      const {
+        data: { user },
+        error
+      } = await supabase.auth.getUser()
+
+      console.log("👤 Supabase user (initial):", user)
+      if (error) console.error("❌ Supabase error (initial):", error)
+      setUser(user)
+    }
+
+    getUser()
+
+    // Listen for auth state changes (login, logout, etc.)
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("🔄 Auth state changed:", event, session)
+      if (event === "SIGNED_IN") {
+        setUser(session?.user || null)
+      } else if (event === "SIGNED_OUT") {
+        setUser(null)
+      }
     })
+
+    // Cleanup the listener on component unmount
+    return () => {
+      authListener.subscription.unsubscribe()
+    }
   }, [])
 
   if (!user) {
@@ -60,38 +82,31 @@ export function UserNav() {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-            <Link href={`/profile/${username}`} className="flex w-full cursor-pointer items-center">
+            <Link href={`/profile/${username}`} className="flex w-full items-center">
               <User className="mr-2 h-4 w-4" />
               <span>My Profile</span>
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href={`/profile/${username}?tab=charts`} className="flex w-full cursor-pointer items-center">
-              <FileText className="mr-2 h-4 w-4" />
-              <span>My Charts</span>
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href={`/profile/${username}?tab=favorites`} className="flex w-full cursor-pointer items-center">
-              <Heart className="mr-2 h-4 w-4" />
-              <span>Favorites</span>
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/create" className="flex w-full cursor-pointer items-center">
+            <Link href="/create" className="flex w-full items-center">
               <PlusCircle className="mr-2 h-4 w-4" />
               <span>Create Chart</span>
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href="/settings" className="flex w-full cursor-pointer items-center">
+            <Link href="/settings" className="flex w-full items-center">
               <Settings className="mr-2 h-4 w-4" />
               <span>Settings</span>
             </Link>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={async () => {
+            await supabase.auth.signOut()
+            router.push("/login") // Redirect to login page after logout
+          }}
+        >
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>
