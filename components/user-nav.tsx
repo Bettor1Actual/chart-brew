@@ -1,10 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { supabase } from "@/lib/supabaseClient"
-import { User, LogOut, Settings, FileText, Heart, PlusCircle } from "lucide-react"
+import { User, LogOut, Settings, PlusCircle } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -18,7 +17,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 export function UserNav() {
-  const router = useRouter()
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
@@ -52,10 +50,25 @@ export function UserNav() {
     }
   }, [])
 
+  const handleLogout = async () => {
+    console.log("Attempting to log out...")
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error("❌ Logout error:", error.message)
+      } else {
+        console.log("✅ Successfully logged out")
+        window.location.href = "/login" // Force a full page reload to ensure session clears
+      }
+    } catch (err) {
+      console.error("❌ Unexpected error during logout:", err)
+    }
+  }
+
   if (!user) {
     return (
-      <Button variant="outline" size="sm" onClick={() => router.push("/login")}>
-        Login
+      <Button variant="outline" size="sm" asChild>
+        <Link href="/login">Login</Link>
       </Button>
     )
   }
@@ -101,12 +114,7 @@ export function UserNav() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={async () => {
-            await supabase.auth.signOut()
-            router.push("/login") // Redirect to login page after logout
-          }}
-        >
+        <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>
